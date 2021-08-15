@@ -1,4 +1,4 @@
-module github.com/hashicorp/memberlist
+module github.com/unionj-cloud/memberlist
 
 go 1.12
 

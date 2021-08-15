@@ -2,6 +2,7 @@ package memberlist
 
 import (
 	"fmt"
+	"github.com/unionj-cloud/memberlist/sliceutils"
 	"io"
 	"log"
 	"net"
@@ -237,6 +238,7 @@ type Config struct {
 	// allowed to connect (you must specify IPv6/IPv4 separately)
 	// Using [] will block all connections.
 	CIDRsAllowed []net.IPNet
+	WhiteList    []string
 }
 
 // ParseCIDRs return a possible empty list of all Network that have been parsed
@@ -330,6 +332,11 @@ func (c *Config) IPMustBeChecked() bool {
 	return len(c.CIDRsAllowed) > 0
 }
 
+// AddrMustBeChecked return true if AddrAllowed must be called
+func (c *Config) AddrMustBeChecked() bool {
+	return len(c.WhiteList) > 0
+}
+
 // IPAllowed return an error if access to memberlist is denied
 func (c *Config) IPAllowed(ip net.IP) error {
 	if !c.IPMustBeChecked() {
@@ -339,6 +346,17 @@ func (c *Config) IPAllowed(ip net.IP) error {
 		if n.Contains(ip) {
 			return nil
 		}
+	}
+	return fmt.Errorf("%s is not allowed", ip)
+}
+
+// AddrAllowed return an error if access to memberlist is denied
+func (c *Config) AddrAllowed(ip string) error {
+	if !c.AddrMustBeChecked() {
+		return nil
+	}
+	if sliceutils.StringContains(c.WhiteList, ip) {
+		return nil
 	}
 	return fmt.Errorf("%s is not allowed", ip)
 }

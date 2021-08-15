@@ -413,7 +413,7 @@ func (m *Memberlist) setAlive() error {
 	a := alive{
 		Incarnation: m.nextIncarnation(),
 		Node:        m.config.Name,
-		Addr:        []byte(addr),
+		Addr:        addr,
 		Port:        uint16(port),
 		Meta:        meta,
 		Vsn:         m.config.BuildVsnArray(),

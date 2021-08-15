@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.0
 	github.com/miekg/dns v1.1.26
 	github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
 	github.com/stretchr/testify v1.7.0
 )

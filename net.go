@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/unionj-cloud/memberlist/stringutils"
 	"hash/crc32"
 	"io"
 	"net"
@@ -629,7 +630,7 @@ func (m *Memberlist) handleSuspect(buf []byte, from net.Addr) {
 // ensureCanConnect return the IP from a RemoteAddress
 // return error if this client must not connect
 func (m *Memberlist) ensureCanConnect(from net.Addr) error {
-	if !m.config.IPMustBeChecked() {
+	if !m.config.AddrMustBeChecked() {
 		return nil
 	}
 	source := from.String()
@@ -640,12 +641,7 @@ func (m *Memberlist) ensureCanConnect(from net.Addr) error {
 	if err != nil {
 		return err
 	}
-
-	ip := net.ParseIP(host)
-	if ip == nil {
-		return fmt.Errorf("Cannot parse IP from %s", host)
-	}
-	return m.config.IPAllowed(ip)
+	return m.config.AddrAllowed(host)
 }
 
 func (m *Memberlist) handleAlive(buf []byte, from net.Addr) {
@@ -658,11 +654,10 @@ func (m *Memberlist) handleAlive(buf []byte, from net.Addr) {
 		m.logger.Printf("[ERR] memberlist: Failed to decode alive message: %s %s", err, LogAddress(from))
 		return
 	}
-	if m.config.IPMustBeChecked() {
-		innerIP := net.IP(live.Addr)
-		if innerIP != nil {
-			if err := m.config.IPAllowed(innerIP); err != nil {
-				m.logger.Printf("[DEBUG] memberlist: Blocked alive.Addr=%s message from: %s %s", innerIP.String(), err, LogAddress(from))
+	if m.config.AddrMustBeChecked() {
+		if stringutils.IsNotEmpty(live.Addr) {
+			if err := m.config.AddrAllowed(live.Addr); err != nil {
+				m.logger.Printf("[DEBUG] memberlist: Blocked alive.Addr=%s message from: %s %s", live.Addr, err, LogAddress(from))
 				return
 			}
 		}

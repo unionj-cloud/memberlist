@@ -296,7 +296,7 @@ func (m *Memberlist) probeNode(node *nodeState) {
 	ping := ping{
 		SeqNo:      m.nextSeqNo(),
 		Node:       node.Name,
-		SourceAddr: selfAddr,
+		SourceAddr: []byte(selfAddr),
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -409,7 +409,7 @@ HANDLE_REMOTE_FAILURE:
 		Target:     node.Addr,
 		Port:       node.Port,
 		Node:       node.Name,
-		SourceAddr: selfAddr,
+		SourceAddr: []byte(selfAddr),
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -503,7 +503,7 @@ func (m *Memberlist) Ping(node string, addr net.Addr) (time.Duration, error) {
 	ping := ping{
 		SeqNo:      m.nextSeqNo(),
 		Node:       node,
-		SourceAddr: selfAddr,
+		SourceAddr: []byte(selfAddr),
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}

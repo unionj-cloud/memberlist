@@ -70,23 +70,23 @@ type MockTransport struct {
 var _ NodeAwareTransport = (*MockTransport)(nil)
 
 // See Transport.
-func (t *MockTransport) FinalAdvertiseAddr(string, int) (net.IP, int, error) {
+func (t *MockTransport) FinalAdvertiseAddr(string, int) (string, int, error) {
 	host, portStr, err := net.SplitHostPort(t.addr.String())
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return nil, 0, fmt.Errorf("Failed to parse IP %q", host)
+		return "", 0, fmt.Errorf("Failed to parse IP %q", host)
 	}
 
 	port, err := strconv.ParseInt(portStr, 10, 16)
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 
-	return ip, int(port), nil
+	return ip.String(), int(port), nil
 }
 
 // See Transport.

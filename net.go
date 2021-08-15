@@ -537,7 +537,7 @@ func (m *Memberlist) handleIndirectPing(buf []byte, from net.Addr) {
 		SeqNo: localSeqNo,
 		Node:  ind.Node,
 		// The outbound message is addressed FROM us.
-		SourceAddr: selfAddr,
+		SourceAddr: []byte(selfAddr),
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}

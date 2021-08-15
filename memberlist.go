@@ -28,7 +28,6 @@ import (
 	"time"
 
 	multierror "github.com/hashicorp/go-multierror"
-	sockaddr "github.com/hashicorp/go-sockaddr"
 	"github.com/miekg/dns"
 )
 
@@ -384,21 +383,6 @@ func (m *Memberlist) setAlive() error {
 	addr, port, err := m.refreshAdvertise()
 	if err != nil {
 		return err
-	}
-
-	// Check if this is a public address without encryption
-	ipAddr, err := sockaddr.NewIPAddr(addr)
-	if err != nil {
-		return fmt.Errorf("Failed to parse interface addresses: %v", err)
-	}
-	ifAddrs := []sockaddr.IfAddr{
-		sockaddr.IfAddr{
-			SockAddr: ipAddr,
-		},
-	}
-	_, publicIfs, err := sockaddr.IfByRFC("6890", ifAddrs)
-	if len(publicIfs) > 0 && !m.config.EncryptionEnabled() {
-		m.logger.Printf("[WARN] memberlist: Binding to public address without encryption!")
 	}
 
 	// Set any metadata from the delegate.

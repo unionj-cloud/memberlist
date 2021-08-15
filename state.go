@@ -25,7 +25,7 @@ const (
 // Node represents a node in the cluster.
 type Node struct {
 	Name  string
-	Addr  net.IP
+	Addr  string
 	Port  uint16
 	Meta  []byte        // Metadata from the delegate for this node.
 	State NodeStateType // State of the node.
@@ -40,14 +40,14 @@ type Node struct {
 // Address returns the host:port form of a node's address, suitable for use
 // with a transport.
 func (n *Node) Address() string {
-	return joinHostPort(n.Addr.String(), n.Port)
+	return joinHostPort(n.Addr, n.Port)
 }
 
 // FullAddress returns the node name and host:port form of a node's address,
 // suitable for use with a transport.
 func (n *Node) FullAddress() Address {
 	return Address{
-		Addr: joinHostPort(n.Addr.String(), n.Port),
+		Addr: joinHostPort(n.Addr, n.Port),
 		Name: n.Name,
 	}
 }
@@ -406,7 +406,7 @@ HANDLE_REMOTE_FAILURE:
 	selfAddr, selfPort = m.getAdvertise()
 	ind := indirectPingReq{
 		SeqNo:      ping.SeqNo,
-		Target:     node.Addr,
+		Target:     []byte(node.Addr),
 		Port:       node.Port,
 		Node:       node.Name,
 		SourceAddr: []byte(selfAddr),
@@ -901,7 +901,7 @@ func (m *Memberlist) refute(me *nodeState, accusedInc uint32) {
 	a := alive{
 		Incarnation: inc,
 		Node:        me.Name,
-		Addr:        me.Addr,
+		Addr:        []byte(me.Addr),
 		Port:        me.Port,
 		Meta:        me.Meta,
 		Vsn: []uint8{
@@ -909,7 +909,7 @@ func (m *Memberlist) refute(me *nodeState, accusedInc uint32) {
 			me.DMin, me.DMax, me.DCur,
 		},
 	}
-	m.encodeAndBroadcast(me.Addr.String(), aliveMsg, a)
+	m.encodeAndBroadcast(me.Addr, aliveMsg, a)
 }
 
 // aliveNode is invoked by the network layer when we get a message about a

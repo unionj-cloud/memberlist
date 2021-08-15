@@ -138,7 +138,7 @@ type suspect struct {
 type alive struct {
 	Incarnation uint32
 	Node        string
-	Addr        []byte
+	Addr        string
 	Port        uint16
 	Meta        []byte
 
@@ -172,7 +172,7 @@ type userMsgHeader struct {
 // transferring out node states
 type pushNodeState struct {
 	Name        string
-	Addr        []byte
+	Addr        string
 	Port        uint16
 	Meta        []byte
 	Incarnation uint32

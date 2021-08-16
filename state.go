@@ -296,7 +296,7 @@ func (m *Memberlist) probeNode(node *nodeState) {
 	ping := ping{
 		SeqNo:      m.nextSeqNo(),
 		Node:       node.Name,
-		SourceAddr: []byte(selfAddr),
+		SourceAddr: selfAddr,
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -406,10 +406,10 @@ HANDLE_REMOTE_FAILURE:
 	selfAddr, selfPort = m.getAdvertise()
 	ind := indirectPingReq{
 		SeqNo:      ping.SeqNo,
-		Target:     []byte(node.Addr),
+		Target:     node.Addr,
 		Port:       node.Port,
 		Node:       node.Name,
-		SourceAddr: []byte(selfAddr),
+		SourceAddr: selfAddr,
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -503,7 +503,7 @@ func (m *Memberlist) Ping(node string, addr net.Addr) (time.Duration, error) {
 	ping := ping{
 		SeqNo:      m.nextSeqNo(),
 		Node:       node,
-		SourceAddr: []byte(selfAddr),
+		SourceAddr: selfAddr,
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -932,7 +932,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 		pMax := a.Vsn[1]
 		pCur := a.Vsn[2]
 		if pMin == 0 || pMax == 0 || pMin > pMax {
-			m.logger.Printf("[WARN] memberlist: Ignoring an alive message for '%s' (%v:%d) because protocol version(s) are wrong: %d <= %d <= %d should be >0", a.Node, net.IP(a.Addr), a.Port, pMin, pCur, pMax)
+			m.logger.Printf("[WARN] memberlist: Ignoring an alive message for '%s' (%v:%d) because protocol version(s) are wrong: %d <= %d <= %d should be >0", a.Node, a.Addr, a.Port, pMin, pCur, pMax)
 			return
 		}
 	}
@@ -944,7 +944,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 	if m.config.Alive != nil {
 		if len(a.Vsn) < 6 {
 			m.logger.Printf("[WARN] memberlist: ignoring alive message for '%s' (%v:%d) because Vsn is not present",
-				a.Node, net.IP(a.Addr), a.Port)
+				a.Node, a.Addr, a.Port)
 			return
 		}
 		node := &Node{
@@ -972,7 +972,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 	if !ok {
 		errCon := m.config.AddrAllowed(a.Addr)
 		if errCon != nil {
-			m.logger.Printf("[WARN] memberlist: Rejected node %s (%v): %s", a.Node, net.IP(a.Addr), errCon)
+			m.logger.Printf("[WARN] memberlist: Rejected node %s (%v): %s", a.Node, a.Addr, errCon)
 			return
 		}
 		state = &nodeState{
@@ -1014,7 +1014,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 		if state.Addr != a.Addr || state.Port != a.Port {
 			errCon := m.config.AddrAllowed(a.Addr)
 			if errCon != nil {
-				m.logger.Printf("[WARN] memberlist: Rejected IP update from %v to %v for node %s: %s", a.Node, state.Addr, net.IP(a.Addr), errCon)
+				m.logger.Printf("[WARN] memberlist: Rejected IP update from %v to %v for node %s: %s", a.Node, state.Addr, a.Addr, errCon)
 				return
 			}
 			// If DeadNodeReclaimTime is configured, check if enough time has elapsed since the node died.
@@ -1024,11 +1024,11 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 			// Allow the address to be updated if a dead node is being replaced.
 			if state.State == StateLeft || (state.State == StateDead && canReclaim) {
 				m.logger.Printf("[INFO] memberlist: Updating address for left or failed node %s from %v:%d to %v:%d",
-					state.Name, state.Addr, state.Port, net.IP(a.Addr), a.Port)
+					state.Name, state.Addr, state.Port, a.Addr, a.Port)
 				updatesNode = true
 			} else {
 				m.logger.Printf("[ERR] memberlist: Conflicting address for %s. Mine: %v:%d Theirs: %v:%d Old state: %v",
-					state.Name, state.Addr, state.Port, net.IP(a.Addr), a.Port, state.State)
+					state.Name, state.Addr, state.Port, a.Addr, a.Port, state.State)
 
 				// Inform the conflict delegate if provided
 				if m.config.Conflict != nil {
@@ -1088,7 +1088,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 			return
 		}
 		m.refute(state, a.Incarnation)
-		m.logger.Printf("[WARN] memberlist: Refuting an alive message for '%s' (%v:%d) meta:(%v VS %v), vsn:(%v VS %v)", a.Node, net.IP(a.Addr), a.Port, a.Meta, state.Meta, a.Vsn, versions)
+		m.logger.Printf("[WARN] memberlist: Refuting an alive message for '%s' (%v:%d) meta:(%v VS %v), vsn:(%v VS %v)", a.Node, a.Addr, a.Port, a.Meta, state.Meta, a.Vsn, versions)
 	} else {
 		m.encodeBroadcastNotify(a.Node, aliveMsg, a, notify)
 

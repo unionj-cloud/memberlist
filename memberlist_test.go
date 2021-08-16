@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	iretry "github.com/unionj-cloud/memberlist/internal/retry"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/require"
+	iretry "github.com/unionj-cloud/memberlist/internal/retry"
 )
 
 var bindLock sync.Mutex
@@ -374,14 +374,14 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 			name: "ipv6 pair",
 			in:   "[::1]:80",
 			expect: []ipPort{
-				{ip: net.IPv6loopback, port: 80},
+				{ip: net.IPv6loopback.String(), port: 80},
 			},
 		},
 		{
 			name: "ipv6 non-pair",
 			in:   "[::1]",
 			expect: []ipPort{
-				{ip: net.IPv6loopback, port: defaultPort},
+				{ip: net.IPv6loopback.String(), port: defaultPort},
 			},
 		},
 		{
@@ -406,7 +406,7 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 			name: "ipv4 port combo",
 			in:   "127.0.0.1:80",
 			expect: []ipPort{
-				{ip: net.IPv4(127, 0, 0, 1), port: 80},
+				{ip: net.IPv4(127, 0, 0, 1).String(), port: 80},
 			},
 		},
 		{
@@ -414,7 +414,7 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 			in:   "[2001:db8:a0b:12f0::1]:80",
 			expect: []ipPort{
 				{
-					ip:   net.IP{0x20, 0x01, 0x0d, 0xb8, 0x0a, 0x0b, 0x12, 0xf0, 0, 0, 0, 0, 0, 0, 0, 0x1},
+					ip:   net.IP{0x20, 0x01, 0x0d, 0xb8, 0x0a, 0x0b, 0x12, 0xf0, 0, 0, 0, 0, 0, 0, 0, 0x1}.String(),
 					port: 80,
 				},
 			},
@@ -428,7 +428,7 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 			name: "ipv4 only",
 			in:   "127.0.0.1",
 			expect: []ipPort{
-				{ip: net.IPv4(127, 0, 0, 1), port: defaultPort},
+				{ip: net.IPv4(127, 0, 0, 1).String(), port: defaultPort},
 			},
 		},
 		{
@@ -436,7 +436,7 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 			in:   "[2001:db8:a0b:12f0::1]",
 			expect: []ipPort{
 				{
-					ip:   net.IP{0x20, 0x01, 0x0d, 0xb8, 0x0a, 0x0b, 0x12, 0xf0, 0, 0, 0, 0, 0, 0, 0, 0x1},
+					ip:   net.IP{0x20, 0x01, 0x0d, 0xb8, 0x0a, 0x0b, 0x12, 0xf0, 0, 0, 0, 0, 0, 0, 0, 0x1}.String(),
 					port: defaultPort,
 				},
 			},
@@ -479,7 +479,7 @@ func TestMemberList_ResolveAddr(t *testing.T) {
 						got = got[0:1]
 					}
 					for i := 0; i < len(got); i++ {
-						got[i].ip = nil
+						got[i].ip = ""
 					}
 				}
 				require.Equal(t, tc.expect, got)
@@ -584,8 +584,8 @@ func TestMemberList_ResolveAddr_TCP_First(t *testing.T) {
 			// IP.String converts IP4-mapped addresses back to dotted decimal notation
 			// but the underlying IP bytes don't compare as equal to the actual IPv4
 			// bytes the resolver will get from DNS.
-			ipPort{ip: net.ParseIP("127.0.0.1").To4(), port: port, nodeName: ""},
-			ipPort{ip: net.ParseIP("2001:db8:a0b:12f0::1"), port: port, nodeName: ""},
+			ipPort{ip: "127.0.0.1", port: port, nodeName: ""},
+			ipPort{ip: net.ParseIP("2001:db8:a0b:12f0::1").String(), port: port, nodeName: ""},
 		}
 		require.Equal(t, expected, ips)
 	}
@@ -1576,7 +1576,7 @@ func TestAdvertiseAddr(t *testing.T) {
 	members := m.Members()
 	require.Equal(t, 1, len(members))
 
-	require.Equal(t, advertiseAddr.String(), members[0].Addr.String())
+	require.Equal(t, advertiseAddr.String(), members[0].Addr)
 	require.Equal(t, advertisePort, int(members[0].Port))
 }
 

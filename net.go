@@ -86,7 +86,7 @@ type ping struct {
 	// restart with a new name.
 	Node string
 
-	SourceAddr []byte `codec:",omitempty"` // Source address, used for a direct reply
+	SourceAddr string `codec:",omitempty"` // Source address, used for a direct reply
 	SourcePort uint16 `codec:",omitempty"` // Source port, used for a direct reply
 	SourceNode string `codec:",omitempty"` // Source name, used for a direct reply
 }
@@ -94,7 +94,7 @@ type ping struct {
 // indirect ping sent to an indirect node
 type indirectPingReq struct {
 	SeqNo  uint32
-	Target []byte
+	Target string
 	Port   uint16
 
 	// Node is sent so the target can verify they are
@@ -104,7 +104,7 @@ type indirectPingReq struct {
 
 	Nack bool // true if we'd like a nack back
 
-	SourceAddr []byte `codec:",omitempty"` // Source address, used for a direct reply
+	SourceAddr string `codec:",omitempty"` // Source address, used for a direct reply
 	SourcePort uint16 `codec:",omitempty"` // Source port, used for a direct reply
 	SourceNode string `codec:",omitempty"` // Source name, used for a direct reply
 }
@@ -504,7 +504,7 @@ func (m *Memberlist) handlePing(buf []byte, from net.Addr) {
 
 	addr := ""
 	if len(p.SourceAddr) > 0 && p.SourcePort > 0 {
-		addr = joinHostPort(net.IP(p.SourceAddr).String(), p.SourcePort)
+		addr = joinHostPort(p.SourceAddr, p.SourcePort)
 	} else {
 		addr = from.String()
 	}
@@ -538,7 +538,7 @@ func (m *Memberlist) handleIndirectPing(buf []byte, from net.Addr) {
 		SeqNo: localSeqNo,
 		Node:  ind.Node,
 		// The outbound message is addressed FROM us.
-		SourceAddr: []byte(selfAddr),
+		SourceAddr: selfAddr,
 		SourcePort: selfPort,
 		SourceNode: m.config.Name,
 	}
@@ -548,7 +548,7 @@ func (m *Memberlist) handleIndirectPing(buf []byte, from net.Addr) {
 	// usable.
 	indAddr := ""
 	if len(ind.SourceAddr) > 0 && ind.SourcePort > 0 {
-		indAddr = joinHostPort(net.IP(ind.SourceAddr).String(), ind.SourcePort)
+		indAddr = joinHostPort(ind.SourceAddr, ind.SourcePort)
 	} else {
 		indAddr = from.String()
 	}
@@ -571,7 +571,7 @@ func (m *Memberlist) handleIndirectPing(buf []byte, from net.Addr) {
 	m.setAckHandler(localSeqNo, respHandler, m.config.ProbeTimeout)
 
 	// Send the ping.
-	addr := joinHostPort(net.IP(ind.Target).String(), ind.Port)
+	addr := joinHostPort(ind.Target, ind.Port)
 	a := Address{
 		Addr: addr,
 		Name: ind.Node,

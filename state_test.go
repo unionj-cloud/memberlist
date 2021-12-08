@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	iretry "github.com/unionj-cloud/memberlist/internal/retry"
 	"github.com/stretchr/testify/require"
+	iretry "github.com/unionj-cloud/memberlist/internal/retry"
 )
 
 func HostMemberlist(host string, t *testing.T, f func(*Config)) *Memberlist {
@@ -55,7 +55,7 @@ func TestMemberList_Probe(t *testing.T) {
 
 	a1 := alive{
 		Node:        addr1.String(),
-		Addr:        []byte(addr1),
+		Addr:        addr1.String(),
 		Port:        uint16(m1.config.BindPort),
 		Incarnation: 1,
 		Vsn:         m1.config.BuildVsnArray(),
@@ -63,7 +63,7 @@ func TestMemberList_Probe(t *testing.T) {
 	m1.aliveNode(&a1, nil, true)
 	a2 := alive{
 		Node:        addr2.String(),
-		Addr:        []byte(addr2),
+		Addr:        addr2.String(),
 		Port:        uint16(m2.config.BindPort),
 		Incarnation: 1,
 		Vsn:         m2.config.BuildVsnArray(),
@@ -90,10 +90,10 @@ func TestMemberList_ProbeNode_Suspect(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = time.Millisecond
@@ -111,13 +111,13 @@ func TestMemberList_ProbeNode_Suspect(t *testing.T) {
 		c.BindPort = bindPort
 	})
 	defer m3.Shutdown()
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
 	m1.aliveNode(&a3, nil, false)
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a4 := alive{Node: addr4.String(), Addr: ip4.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a4, nil, false)
 
 	n := m1.nodeMap[addr4.String()]
@@ -168,7 +168,7 @@ func TestMemberList_ProbeNode_Suspect_Dogpile(t *testing.T) {
 
 			bindPort := m.config.BindPort
 
-			a := alive{Node: addr.String(), Addr: []byte(addr), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+			a := alive{Node: addr.String(), Addr: addr.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 			m.aliveNode(&a, nil, true)
 
 			// Make all but one peer be an real, alive instance.
@@ -183,14 +183,14 @@ func TestMemberList_ProbeNode_Suspect_Dogpile(t *testing.T) {
 
 				peers = append(peers, peer)
 
-				a = alive{Node: peerAddr.String(), Addr: []byte(peerAddr), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+				a = alive{Node: peerAddr.String(), Addr: peerAddr.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 				m.aliveNode(&a, nil, false)
 			}
 
 			// Just use a bogus address for the last peer so it doesn't respond
 			// to pings, but tell the memberlist it's alive.
 			badPeerAddr := getBindAddr()
-			a = alive{Node: badPeerAddr.String(), Addr: []byte(badPeerAddr), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+			a = alive{Node: badPeerAddr.String(), Addr: badPeerAddr.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 			m.aliveNode(&a, nil, false)
 
 			// Force a probe, which should start us into the suspect state.
@@ -233,10 +233,10 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMax time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -263,18 +263,18 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 	})
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
 
 	// Make sure m4 is configured with the same protocol version as m1 so
 	// the TCP fallback behavior is enabled.
 	a4 := alive{
 		Node:        addr4.String(),
-		Addr:        ip4,
+		Addr:        ip4.String(),
 		Port:        uint16(bindPort),
 		Incarnation: 1,
 		Vsn: []uint8{
@@ -294,7 +294,7 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 	if err = m4.udpListener.Close(); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	udpAddr := &net.UDPAddr{IP: ip4, Port: 9999}
+	udpAddr := &net.UDPAddr{IP: ip4.String(), Port: 9999}
 	if m4.udpListener, err = net.ListenUDP("udp", udpAddr); err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -326,7 +326,7 @@ func TestMemberList_ProbeNode_FallbackTCP(t *testing.T) {
 	if err = m4.tcpListener.Close(); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	tcpAddr := &net.TCPAddr{IP: ip4, Port: 9999}
+	tcpAddr := &net.TCPAddr{IP: ip4.String(), Port: 9999}
 	if m4.tcpListener, err = net.ListenTCP("tcp", tcpAddr); err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -359,10 +359,10 @@ func TestMemberList_ProbeNode_FallbackTCP_Disabled(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMax time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -389,18 +389,18 @@ func TestMemberList_ProbeNode_FallbackTCP_Disabled(t *testing.T) {
 	})
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
 
 	// Make sure m4 is configured with the same protocol version as m1 so
 	// the TCP fallback behavior is enabled.
 	a4 := alive{
 		Node:        addr4.String(),
-		Addr:        ip4,
+		Addr:        ip4.String(),
 		Port:        uint16(bindPort),
 		Incarnation: 1,
 		Vsn: []uint8{
@@ -420,7 +420,7 @@ func TestMemberList_ProbeNode_FallbackTCP_Disabled(t *testing.T) {
 	if err = m4.udpListener.Close(); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	udpAddr := &net.UDPAddr{IP: ip4, Port: 9999}
+	udpAddr := &net.UDPAddr{IP: ip4.String(), Port: 9999}
 	if m4.udpListener, err = net.ListenUDP("udp", udpAddr); err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -457,10 +457,10 @@ func TestMemberList_ProbeNode_FallbackTCP_OldProtocol(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMax time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -487,18 +487,18 @@ func TestMemberList_ProbeNode_FallbackTCP_OldProtocol(t *testing.T) {
 	})
 	defer m4.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
 
 	// Set up m4 so that it doesn't understand a version of the protocol
 	// that supports TCP pings.
 	a4 := alive{
 		Node:        addr4.String(),
-		Addr:        ip4,
+		Addr:        ip4.String(),
 		Port:        uint16(bindPort),
 		Incarnation: 1,
 		Vsn: []uint8{
@@ -518,7 +518,7 @@ func TestMemberList_ProbeNode_FallbackTCP_OldProtocol(t *testing.T) {
 	if err = m4.udpListener.Close(); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	udpAddr := &net.UDPAddr{IP: ip4, Port: 9999}
+	udpAddr := &net.UDPAddr{IP: ip4.String(), Port: 9999}
 	if m4.udpListener, err = net.ListenUDP("udp", udpAddr); err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -553,10 +553,10 @@ func TestMemberList_ProbeNode_Awareness_Degraded(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMin time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -582,11 +582,11 @@ func TestMemberList_ProbeNode_Awareness_Degraded(t *testing.T) {
 	})
 	defer m3.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
 	m1.aliveNode(&a3, nil, false)
 
 	vsn4 := []uint8{
@@ -594,7 +594,7 @@ func TestMemberList_ProbeNode_Awareness_Degraded(t *testing.T) {
 		1, 1, 1,
 	}
 	// Node 4 never gets started.
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: uint16(bindPort), Incarnation: 1, Vsn: vsn4}
+	a4 := alive{Node: addr4.String(), Addr: ip4.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: vsn4}
 	m1.aliveNode(&a4, nil, false)
 
 	// Start the health in a degraded state.
@@ -637,10 +637,10 @@ func TestMemberList_ProbeNode_Wrong_VSN(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = 10 * time.Millisecond
@@ -664,11 +664,11 @@ func TestMemberList_ProbeNode_Wrong_VSN(t *testing.T) {
 	})
 	defer m3.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
 	m1.aliveNode(&a3, nil, false)
 
 	vsn4 := []uint8{
@@ -676,7 +676,7 @@ func TestMemberList_ProbeNode_Wrong_VSN(t *testing.T) {
 		0, 0, 0,
 	}
 	// Node 4 never gets started.
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: uint16(bindPort), Incarnation: 1, Vsn: vsn4}
+	a4 := alive{Node: addr4.String(), Addr: ip4.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: vsn4}
 	m1.aliveNode(&a4, nil, false)
 
 	// Start the health in a degraded state.
@@ -695,8 +695,8 @@ func TestMemberList_ProbeNode_Wrong_VSN(t *testing.T) {
 func TestMemberList_ProbeNode_Awareness_Improved(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = 10 * time.Millisecond
@@ -711,9 +711,9 @@ func TestMemberList_ProbeNode_Awareness_Improved(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
 
 	// Start the health in a degraded state.
@@ -742,10 +742,10 @@ func TestMemberList_ProbeNode_Awareness_MissedNack(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMax time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -764,16 +764,16 @@ func TestMemberList_ProbeNode_Awareness_MissedNack(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
 
 	vsn := m1.config.BuildVsnArray()
 	// Node 3 and node 4 never get started.
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1, Vsn: vsn}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: vsn}
 	m1.aliveNode(&a3, nil, false)
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: uint16(bindPort), Incarnation: 1, Vsn: vsn}
+	a4 := alive{Node: addr4.String(), Addr: ip4.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: vsn}
 	m1.aliveNode(&a4, nil, false)
 
 	// Make sure health looks good.
@@ -817,10 +817,10 @@ func TestMemberList_ProbeNode_Awareness_OldProtocol(t *testing.T) {
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
 	addr4 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
-	ip4 := []byte(addr4)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
+	ip4 := addr4
 
 	var probeTimeMax time.Duration
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
@@ -842,15 +842,15 @@ func TestMemberList_ProbeNode_Awareness_OldProtocol(t *testing.T) {
 	})
 	defer m3.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a3, nil, false)
 
 	// Node 4 never gets started.
-	a4 := alive{Node: addr4.String(), Addr: ip4, Port: uint16(bindPort), Incarnation: 1}
+	a4 := alive{Node: addr4.String(), Addr: ip4.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a4, nil, false)
 
 	// Make sure health looks good.
@@ -890,8 +890,8 @@ func TestMemberList_ProbeNode_Awareness_OldProtocol(t *testing.T) {
 func TestMemberList_ProbeNode_Buddy(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = time.Millisecond
@@ -906,8 +906,8 @@ func TestMemberList_ProbeNode_Buddy(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 
 	m1.aliveNode(&a1, nil, true)
 	m1.aliveNode(&a2, nil, false)
@@ -938,8 +938,8 @@ func TestMemberList_ProbeNode_Buddy(t *testing.T) {
 func TestMemberList_ProbeNode(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = time.Millisecond
@@ -954,9 +954,9 @@ func TestMemberList_ProbeNode(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
 
 	n := m1.nodeMap[addr2.String()]
@@ -976,8 +976,8 @@ func TestMemberList_ProbeNode(t *testing.T) {
 func TestMemberList_Ping(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.ProbeTimeout = 1 * time.Second
@@ -992,9 +992,9 @@ func TestMemberList_Ping(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1}
 	m1.aliveNode(&a2, nil, false)
 
 	// Do a legit ping.
@@ -1024,11 +1024,11 @@ func TestMemberList_ResetNodes(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a1 := alive{Node: "test1", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a1 := alive{Node: "test1", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a1, nil, false)
-	a2 := alive{Node: "test2", Addr: []byte{127, 0, 0, 2}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a2 := alive{Node: "test2", Addr: string([]byte{127, 0, 0, 2}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a2, nil, false)
-	a3 := alive{Node: "test3", Addr: []byte{127, 0, 0, 3}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a3 := alive{Node: "test3", Addr: string([]byte{127, 0, 0, 3}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a3, nil, false)
 	d := dead{Node: "test2", Incarnation: 1}
 	m.deadNode(&d)
@@ -1209,7 +1209,7 @@ func TestMemberList_AliveNode_NewNode(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	if len(m.nodes) != 1 {
@@ -1257,7 +1257,7 @@ func TestMemberList_AliveNode_SuspectNode(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	// Listen only after first join
@@ -1308,7 +1308,7 @@ func TestMemberList_AliveNode_Idempotent(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	// Listen only after first join
@@ -1399,7 +1399,7 @@ func TestMemberList_AliveNode_ChangeMeta(t *testing.T) {
 
 	a := alive{
 		Node:        "test",
-		Addr:        []byte{127, 0, 0, 1},
+		Addr:        string([]byte{127, 0, 0, 1}),
 		Meta:        []byte("val1"),
 		Incarnation: 1,
 		Vsn:         m.config.BuildVsnArray()}
@@ -1443,7 +1443,7 @@ func TestMemberList_AliveNode_Refute(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: m.config.Name, Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: m.config.Name, Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1452,7 +1452,7 @@ func TestMemberList_AliveNode_Refute(t *testing.T) {
 	// Conflicting alive
 	s := alive{
 		Node:        m.config.Name,
-		Addr:        []byte{127, 0, 0, 1},
+		Addr:        string([]byte{127, 0, 0, 1}),
 		Incarnation: 2,
 		Meta:        []byte("foo"),
 		Vsn:         m.config.BuildVsnArray(),
@@ -1486,7 +1486,7 @@ func TestMemberList_AliveNode_Conflict(t *testing.T) {
 	defer m.Shutdown()
 
 	nodeName := "test"
-	a := alive{Node: nodeName, Addr: []byte{127, 0, 0, 1}, Port: 8000, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: nodeName, Addr: string([]byte{127, 0, 0, 1}), Port: 8000, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1495,7 +1495,7 @@ func TestMemberList_AliveNode_Conflict(t *testing.T) {
 	// Conflicting alive
 	s := alive{
 		Node:        nodeName,
-		Addr:        []byte{127, 0, 0, 2},
+		Addr:        string([]byte{127, 0, 0, 2}),
 		Port:        9000,
 		Incarnation: 2,
 		Meta:        []byte("foo"),
@@ -1510,7 +1510,7 @@ func TestMemberList_AliveNode_Conflict(t *testing.T) {
 	if state.Meta != nil {
 		t.Fatalf("meta should still be nil")
 	}
-	if bytes.Equal(state.Addr, []byte{127, 0, 0, 2}) {
+	if state.Addr == string([]byte{127, 0, 0, 2}) {
 		t.Fatalf("address should not be updated")
 	}
 	if state.Port == 9000 {
@@ -1537,7 +1537,7 @@ func TestMemberList_AliveNode_Conflict(t *testing.T) {
 	// New alive node
 	s2 := alive{
 		Node:        nodeName,
-		Addr:        []byte{127, 0, 0, 2},
+		Addr:        string([]byte{127, 0, 0, 2}),
 		Port:        9000,
 		Incarnation: 3,
 		Meta:        []byte("foo"),
@@ -1552,7 +1552,7 @@ func TestMemberList_AliveNode_Conflict(t *testing.T) {
 	if !bytes.Equal(state.Meta, []byte("foo")) {
 		t.Fatalf("meta should be updated")
 	}
-	if !bytes.Equal(state.Addr, []byte{127, 0, 0, 2}) {
+	if state.Addr != string([]byte{127, 0, 0, 2}) {
 		t.Fatalf("address should be updated")
 	}
 	if state.Port != 9000 {
@@ -1578,7 +1578,7 @@ func TestMemberList_SuspectNode(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	m.changeNode("test", func(state *nodeState) {
@@ -1637,7 +1637,7 @@ func TestMemberList_SuspectNode_DoubleSuspect(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
@@ -1676,7 +1676,7 @@ func TestMemberList_SuspectNode_OldSuspect(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 10, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 10, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
@@ -1702,7 +1702,7 @@ func TestMemberList_SuspectNode_Refute(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: m.config.Name, Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: m.config.Name, Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1759,7 +1759,7 @@ func TestMemberList_DeadNodeLeft(t *testing.T) {
 	nodeName := "node1"
 	s1 := alive{
 		Node:        nodeName,
-		Addr:        []byte{127, 0, 0, 1},
+		Addr:        string([]byte{127, 0, 0, 1}),
 		Port:        8000,
 		Incarnation: 1,
 		Vsn:         m.config.BuildVsnArray(),
@@ -1796,7 +1796,7 @@ func TestMemberList_DeadNodeLeft(t *testing.T) {
 	// New alive node
 	s2 := alive{
 		Node:        nodeName,
-		Addr:        []byte{127, 0, 0, 2},
+		Addr:        string([]byte{127, 0, 0, 2}),
 		Port:        9000,
 		Incarnation: 3,
 		Meta:        []byte("foo"),
@@ -1814,7 +1814,7 @@ func TestMemberList_DeadNodeLeft(t *testing.T) {
 	if !bytes.Equal(state.Meta, []byte("foo")) {
 		t.Fatalf("meta should be updated")
 	}
-	if !bytes.Equal(state.Addr, []byte{127, 0, 0, 2}) {
+	if state.Addr != string([]byte{127, 0, 0, 2}) {
 		t.Fatalf("address should be updated")
 	}
 	if state.Port != 9000 {
@@ -1830,7 +1830,7 @@ func TestMemberList_DeadNode(t *testing.T) {
 	})
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	// Read the join event
@@ -1876,7 +1876,7 @@ func TestMemberList_DeadNode_Double(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
@@ -1911,7 +1911,7 @@ func TestMemberList_DeadNode_OldDead(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 10, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 10, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	state := m.nodeMap["test"]
@@ -1929,7 +1929,7 @@ func TestMemberList_DeadNode_AliveReplay(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: "test", Addr: []byte{127, 0, 0, 1}, Incarnation: 10, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: "test", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 10, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, false)
 
 	d := dead{Node: "test", Incarnation: 10}
@@ -1949,7 +1949,7 @@ func TestMemberList_DeadNode_Refute(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a := alive{Node: m.config.Name, Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a := alive{Node: m.config.Name, Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a, nil, true)
 
 	// Clear queue
@@ -1988,11 +1988,11 @@ func TestMemberList_MergeState(t *testing.T) {
 	m := GetMemberlist(t, nil)
 	defer m.Shutdown()
 
-	a1 := alive{Node: "test1", Addr: []byte{127, 0, 0, 1}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a1 := alive{Node: "test1", Addr: string([]byte{127, 0, 0, 1}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a1, nil, false)
-	a2 := alive{Node: "test2", Addr: []byte{127, 0, 0, 2}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a2 := alive{Node: "test2", Addr: string([]byte{127, 0, 0, 2}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a2, nil, false)
-	a3 := alive{Node: "test3", Addr: []byte{127, 0, 0, 3}, Incarnation: 1, Vsn: m.config.BuildVsnArray()}
+	a3 := alive{Node: "test3", Addr: string([]byte{127, 0, 0, 3}), Incarnation: 1, Vsn: m.config.BuildVsnArray()}
 	m.aliveNode(&a3, nil, false)
 
 	s := suspect{Node: "test1", Incarnation: 1}
@@ -2001,25 +2001,25 @@ func TestMemberList_MergeState(t *testing.T) {
 	remote := []pushNodeState{
 		pushNodeState{
 			Name:        "test1",
-			Addr:        []byte{127, 0, 0, 1},
+			Addr:        string([]byte{127, 0, 0, 1}),
 			Incarnation: 2,
 			State:       StateAlive,
 		},
 		pushNodeState{
 			Name:        "test2",
-			Addr:        []byte{127, 0, 0, 2},
+			Addr:        string([]byte{127, 0, 0, 2}),
 			Incarnation: 1,
 			State:       StateSuspect,
 		},
 		pushNodeState{
 			Name:        "test3",
-			Addr:        []byte{127, 0, 0, 3},
+			Addr:        string([]byte{127, 0, 0, 3}),
 			Incarnation: 1,
 			State:       StateDead,
 		},
 		pushNodeState{
 			Name:        "test4",
-			Addr:        []byte{127, 0, 0, 4},
+			Addr:        string([]byte{127, 0, 0, 4}),
 			Incarnation: 2,
 			State:       StateAlive,
 		},
@@ -2076,9 +2076,9 @@ func TestMemberlist_Gossip(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
 	addr3 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
-	ip3 := []byte(addr3)
+	ip1 := addr1
+	ip2 := addr2
+	ip3 := addr3
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		// Set the gossip interval fast enough to get a reasonable test,
@@ -2102,11 +2102,11 @@ func TestMemberlist_Gossip(t *testing.T) {
 	})
 	defer m3.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
-	a3 := alive{Node: addr3.String(), Addr: ip3, Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
+	a3 := alive{Node: addr3.String(), Addr: ip3.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m3.config.BuildVsnArray()}
 	m1.aliveNode(&a3, nil, false)
 
 	// Gossip should send all this to m2. Retry a few times because it's UDP and
@@ -2151,8 +2151,8 @@ func TestMemberlist_GossipToDead(t *testing.T) {
 
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	m1 := HostMemberlist(addr1.String(), t, func(c *Config) {
 		c.GossipInterval = time.Millisecond
@@ -2169,9 +2169,9 @@ func TestMemberlist_GossipToDead(t *testing.T) {
 
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
 
 	// Shouldn't send anything to m2 here, node has been dead for 2x the GossipToTheDeadTime
@@ -2233,8 +2233,8 @@ func TestMemberlist_FailedRemote(t *testing.T) {
 func TestMemberlist_PushPull(t *testing.T) {
 	addr1 := getBindAddr()
 	addr2 := getBindAddr()
-	ip1 := []byte(addr1)
-	ip2 := []byte(addr2)
+	ip1 := addr1
+	ip2 := addr2
 
 	ch := make(chan NodeEvent, 3)
 
@@ -2253,9 +2253,9 @@ func TestMemberlist_PushPull(t *testing.T) {
 	})
 	defer m2.Shutdown()
 
-	a1 := alive{Node: addr1.String(), Addr: ip1, Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
+	a1 := alive{Node: addr1.String(), Addr: ip1.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m1.config.BuildVsnArray()}
 	m1.aliveNode(&a1, nil, true)
-	a2 := alive{Node: addr2.String(), Addr: ip2, Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
+	a2 := alive{Node: addr2.String(), Addr: ip2.String(), Port: uint16(bindPort), Incarnation: 1, Vsn: m2.config.BuildVsnArray()}
 	m1.aliveNode(&a2, nil, false)
 
 	// Gossip should send all this to m2. It's UDP though so retry a few times

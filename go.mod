@@ -14,5 +14,6 @@ require (
 	github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529
+	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/stretchr/testify v1.7.0
 )

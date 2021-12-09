@@ -3,6 +3,7 @@ package memberlist
 import (
 	"bytes"
 	"fmt"
+	"github.com/shirou/gopsutil/cpu"
 	"math"
 	"math/rand"
 	"net"
@@ -63,6 +64,7 @@ type nodeState struct {
 	Incarnation uint32        // Last known incarnation number
 	State       NodeStateType // Current state
 	StateChange time.Time     // Time last state change happened
+	Weight      int           // node weight for load balance
 }
 
 // Address returns the host:port form of a node's address, suitable for use
@@ -131,6 +133,13 @@ func (m *Memberlist) schedule() {
 	if m.config.GossipInterval > 0 && m.config.GossipNodes > 0 {
 		t := time.NewTicker(m.config.GossipInterval)
 		go m.triggerFunc(m.config.GossipInterval, t.C, stopCh, m.gossip)
+		m.tickers = append(m.tickers, t)
+	}
+
+	// Create node weight ticker if needed
+	if m.config.WeightInterval > 0 {
+		t := time.NewTicker(m.config.WeightInterval)
+		go m.triggerFunc(m.config.WeightInterval, t.C, stopCh, m.weight)
 		m.tickers = append(m.tickers, t)
 	}
 
@@ -613,6 +622,26 @@ func (m *Memberlist) gossip() {
 			}
 		}
 	}
+}
+
+// weight is invoked every WeightInterval period to calculate local node weight and
+// enqueue a message carrying the result
+func (m *Memberlist) weight() {
+	defer metrics.MeasureSince([]string{"memberlist", "weight"}, time.Now())
+
+	// Weight = (AwarenessMaxMultiplier - AwarenessScore) * 0.5 + AwarenessMaxMultiplier * CPUIdlePercent * 0.5
+	percent, err := cpu.Percent(0, false)
+	if err != nil {
+		m.logger.Printf("[ERR] memberlist: Failed to get cpu busy percent: %s", err)
+		return
+	}
+	cpuIdlePercent := 100 - percent[0]
+	result := int(math.Round(float64(m.config.AwarenessMaxMultiplier-m.awareness.GetHealthScore())*0.6 +
+		float64(m.config.AwarenessMaxMultiplier)*cpuIdlePercent/100*0.4))
+
+	w := weight{Incarnation: m.incarnation, Node: m.config.Name, From: m.config.Name, Weight: result}
+	m.encodeAndBroadcast(m.config.Name, weightMsg, w)
+	m.logger.Printf("[DEBUG] memberlist: enqueued latest weight of local node %s: %d", m.config.Name, result)
 }
 
 // pushPull is invoked periodically to randomly perform a complete state
@@ -1281,6 +1310,100 @@ func (m *Memberlist) deadNode(d *dead) {
 	if m.config.Events != nil {
 		m.config.Events.NotifyLeave(&state.Node)
 	}
+}
+
+// weightNode is invoked by the network layer when we get a message
+// about node weight
+// TODO
+func (m *Memberlist) weightNode(s *weight) {
+	m.nodeLock.Lock()
+	defer m.nodeLock.Unlock()
+	state, ok := m.nodeMap[s.Node]
+
+	// If we've never heard about this node before, ignore it
+	if !ok {
+		return
+	}
+
+	// Ignore old incarnation numbers
+	if s.Incarnation < state.Incarnation {
+		return
+	}
+
+	// See if there's a suspicion timer we can confirm. If the info is new
+	// to us we will go ahead and re-gossip it. This allows for multiple
+	// independent confirmations to flow even when a node probes a node
+	// that's already suspect.
+	if timer, ok := m.nodeTimers[s.Node]; ok {
+		if timer.Confirm(s.From) {
+			m.encodeAndBroadcast(s.Node, suspectMsg, s)
+		}
+		return
+	}
+
+	// Ignore non-alive nodes
+	if state.State != StateAlive {
+		return
+	}
+
+	// If this is us we need to refute, otherwise re-broadcast
+	if state.Name == m.config.Name {
+		m.refute(state, s.Incarnation)
+		m.logger.Printf("[WARN] memberlist: Refuting a suspect message (from: %s)", s.From)
+		return // Do not mark ourself suspect
+	} else {
+		m.encodeAndBroadcast(s.Node, suspectMsg, s)
+	}
+
+	// Update metrics
+	metrics.IncrCounter([]string{"memberlist", "msg", "suspect"}, 1)
+
+	// Update the state
+	state.Incarnation = s.Incarnation
+	state.State = StateSuspect
+	changeTime := time.Now()
+	state.StateChange = changeTime
+
+	// Setup a suspicion timer. Given that we don't have any known phase
+	// relationship with our peers, we set up k such that we hit the nominal
+	// timeout two probe intervals short of what we expect given the suspicion
+	// multiplier.
+	k := m.config.SuspicionMult - 2
+
+	// If there aren't enough nodes to give the expected confirmations, just
+	// set k to 0 to say that we don't expect any. Note we subtract 2 from n
+	// here to take out ourselves and the node being probed.
+	n := m.estNumNodes()
+	if n-2 < k {
+		k = 0
+	}
+
+	// Compute the timeouts based on the size of the cluster.
+	min := suspicionTimeout(m.config.SuspicionMult, n, m.config.ProbeInterval)
+	max := time.Duration(m.config.SuspicionMaxTimeoutMult) * min
+	fn := func(numConfirmations int) {
+		var d *dead
+
+		m.nodeLock.Lock()
+		state, ok := m.nodeMap[s.Node]
+		timeout := ok && state.State == StateSuspect && state.StateChange == changeTime
+		if timeout {
+			d = &dead{Incarnation: state.Incarnation, Node: state.Name, From: m.config.Name}
+		}
+		m.nodeLock.Unlock()
+
+		if timeout {
+			if k > 0 && numConfirmations < k {
+				metrics.IncrCounter([]string{"memberlist", "degraded", "timeout"}, 1)
+			}
+
+			m.logger.Printf("[INFO] memberlist: Marking %s as failed, suspect timeout reached (%d peer confirmations)",
+				state.Name, numConfirmations)
+
+			m.deadNode(d)
+		}
+	}
+	m.nodeTimers[s.Node] = newSuspicion(s.From, k, min, max, fn)
 }
 
 // mergeState is invoked by the network layer when we get a Push/Pull

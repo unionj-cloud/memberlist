@@ -52,12 +52,13 @@ const (
 	deadMsg
 	pushPullMsg
 	compoundMsg
-	userMsg // User mesg, not handled by us
+	userMsg // User message, not handled by us
 	compressMsg
 	encryptMsg
 	nackRespMsg
 	hasCrcMsg
 	errMsg
+	weightMsg
 )
 
 // compressionType is used to specify the compression algorithm
@@ -72,6 +73,7 @@ const (
 	compoundHeaderOverhead = 2   // Assumed header overhead
 	compoundOverhead       = 2   // Assumed overhead per entry in compoundHeader
 	userMsgOverhead        = 1
+	weightMsgOverhead      = 1
 	blockingWarning        = 10 * time.Millisecond // Warn if a UDP packet takes this long to process
 	maxPushStateBytes      = 20 * 1024 * 1024
 	maxPushPullRequests    = 128 // Maximum number of concurrent push/pull requests
@@ -154,6 +156,14 @@ type dead struct {
 	Incarnation uint32
 	Node        string
 	From        string // Include who is suspecting
+}
+
+// weight is broadcast when we send local node weight
+type weight struct {
+	Incarnation uint32
+	Node        string
+	From        string
+	Weight      int
 }
 
 // pushPullHeader is used to inform the
@@ -386,6 +396,8 @@ func (m *Memberlist) handleCommand(buf []byte, from net.Addr, timestamp time.Tim
 		fallthrough
 	case deadMsg:
 		fallthrough
+	case weightMsg:
+		fallthrough
 	case userMsg:
 		// Determine the message queue, prioritize alive
 		queue := m.lowPriorityMsgQueue
@@ -453,6 +465,8 @@ func (m *Memberlist) packetHandler() {
 					m.handleAlive(buf, from)
 				case deadMsg:
 					m.handleDead(buf, from)
+				case weightMsg:
+					m.handleWeight(buf, from)
 				case userMsg:
 					m.handleUser(buf, from)
 				default:
@@ -679,6 +693,15 @@ func (m *Memberlist) handleDead(buf []byte, from net.Addr) {
 		return
 	}
 	m.deadNode(&d)
+}
+
+func (m *Memberlist) handleWeight(buf []byte, from net.Addr) {
+	var wei weight
+	if err := decode(buf, &wei); err != nil {
+		m.logger.Printf("[ERR] memberlist: Failed to decode weight message: %s %s", err, LogAddress(from))
+		return
+	}
+	m.weightNode(&wei)
 }
 
 // handleUser is used to notify channels of incoming user data

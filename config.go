@@ -151,6 +151,15 @@ type Config struct {
 	GossipNodes         int
 	GossipToTheDeadTime time.Duration
 
+	// WeightInterval is the interval between calculating local node weight and enqueue a message carrying the result
+	// weight is calculated using the formula:
+	//
+	// Weight = (AwarenessMaxMultiplier - AwarenessScore) * 0.6 + AwarenessMaxMultiplier * CPUIdlePercent * 0.4
+	//
+	// local node weight messages will be gossiped to remote nodes. Remote nodes will use it to implement smooth
+	// weighted round-robin load balance algo for choosing the next service provider
+	WeightInterval time.Duration
+
 	// GossipVerifyIncoming controls whether to enforce encryption for incoming
 	// gossip. It is used for upshifting from unencrypted to encrypted gossip on
 	// a running cluster.

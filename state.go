@@ -1336,7 +1336,7 @@ func (m *Memberlist) weightNode(s *weight) {
 	}
 
 	// Ignore old weight messages
-	if s.WeightAt < state.WeightAt {
+	if s.WeightAt <= state.WeightAt {
 		return
 	}
 

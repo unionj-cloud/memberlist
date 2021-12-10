@@ -65,6 +65,7 @@ type nodeState struct {
 	State       NodeStateType // Current state
 	StateChange time.Time     // Time last state change happened
 	Weight      int           // node weight for load balance
+	WeightAt    int64         // UTC timestamp which node weight calculated at
 }
 
 // Address returns the host:port form of a node's address, suitable for use
@@ -639,7 +640,7 @@ func (m *Memberlist) weight() {
 	result := int(math.Round(float64(m.config.AwarenessMaxMultiplier-m.awareness.GetHealthScore())*0.6 +
 		float64(m.config.AwarenessMaxMultiplier)*cpuIdlePercent/100*0.4))
 
-	w := weight{Incarnation: m.incarnation, Node: m.config.Name, From: m.config.Name, Weight: result}
+	w := weight{Incarnation: m.incarnation, Node: m.config.Name, From: m.config.Name, Weight: result, WeightAt: time.Now().UTC().UnixNano() / 1000000}
 	m.encodeAndBroadcast(m.config.Name, weightMsg, w)
 	m.logger.Printf("[DEBUG] memberlist: enqueued latest weight of local node %s: %d", m.config.Name, result)
 }
@@ -1314,7 +1315,6 @@ func (m *Memberlist) deadNode(d *dead) {
 
 // weightNode is invoked by the network layer when we get a message
 // about node weight
-// TODO
 func (m *Memberlist) weightNode(s *weight) {
 	m.nodeLock.Lock()
 	defer m.nodeLock.Unlock()
@@ -1330,80 +1330,24 @@ func (m *Memberlist) weightNode(s *weight) {
 		return
 	}
 
-	// See if there's a suspicion timer we can confirm. If the info is new
-	// to us we will go ahead and re-gossip it. This allows for multiple
-	// independent confirmations to flow even when a node probes a node
-	// that's already suspect.
-	if timer, ok := m.nodeTimers[s.Node]; ok {
-		if timer.Confirm(s.From) {
-			m.encodeAndBroadcast(s.Node, suspectMsg, s)
-		}
+	// Ignore non-alive nodes or this is about us
+	if state.State != StateAlive || state.Name == m.config.Name {
 		return
 	}
 
-	// Ignore non-alive nodes
-	if state.State != StateAlive {
+	// Ignore old weight messages
+	if s.WeightAt < state.WeightAt {
 		return
-	}
-
-	// If this is us we need to refute, otherwise re-broadcast
-	if state.Name == m.config.Name {
-		m.refute(state, s.Incarnation)
-		m.logger.Printf("[WARN] memberlist: Refuting a suspect message (from: %s)", s.From)
-		return // Do not mark ourself suspect
-	} else {
-		m.encodeAndBroadcast(s.Node, suspectMsg, s)
 	}
 
 	// Update metrics
-	metrics.IncrCounter([]string{"memberlist", "msg", "suspect"}, 1)
+	metrics.IncrCounter([]string{"memberlist", "msg", "weight"}, 1)
 
 	// Update the state
 	state.Incarnation = s.Incarnation
-	state.State = StateSuspect
-	changeTime := time.Now()
-	state.StateChange = changeTime
-
-	// Setup a suspicion timer. Given that we don't have any known phase
-	// relationship with our peers, we set up k such that we hit the nominal
-	// timeout two probe intervals short of what we expect given the suspicion
-	// multiplier.
-	k := m.config.SuspicionMult - 2
-
-	// If there aren't enough nodes to give the expected confirmations, just
-	// set k to 0 to say that we don't expect any. Note we subtract 2 from n
-	// here to take out ourselves and the node being probed.
-	n := m.estNumNodes()
-	if n-2 < k {
-		k = 0
-	}
-
-	// Compute the timeouts based on the size of the cluster.
-	min := suspicionTimeout(m.config.SuspicionMult, n, m.config.ProbeInterval)
-	max := time.Duration(m.config.SuspicionMaxTimeoutMult) * min
-	fn := func(numConfirmations int) {
-		var d *dead
-
-		m.nodeLock.Lock()
-		state, ok := m.nodeMap[s.Node]
-		timeout := ok && state.State == StateSuspect && state.StateChange == changeTime
-		if timeout {
-			d = &dead{Incarnation: state.Incarnation, Node: state.Name, From: m.config.Name}
-		}
-		m.nodeLock.Unlock()
-
-		if timeout {
-			if k > 0 && numConfirmations < k {
-				metrics.IncrCounter([]string{"memberlist", "degraded", "timeout"}, 1)
-			}
-
-			m.logger.Printf("[INFO] memberlist: Marking %s as failed, suspect timeout reached (%d peer confirmations)",
-				state.Name, numConfirmations)
-
-			m.deadNode(d)
-		}
-	}
-	m.nodeTimers[s.Node] = newSuspicion(s.From, k, min, max, fn)
+	old := state.Weight
+	state.Weight = s.Weight
+	m.logger.Printf("[DEBUG] memberlist: updated weight of node %s from %d to %d", state.Name, old, state.Weight)
 }
 
 // mergeState is invoked by the network layer when we get a Push/Pull

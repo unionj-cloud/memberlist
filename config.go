@@ -307,6 +307,8 @@ func DefaultLANConfig() *Config {
 		GossipVerifyIncoming: true,
 		GossipVerifyOutgoing: true,
 
+		WeightInterval: 1 * time.Second,
+
 		EnableCompression: true, // Enable compression by default
 
 		SecretKey: nil,
@@ -333,6 +335,7 @@ func DefaultWANConfig() *Config {
 	conf.GossipNodes = 4 // Gossip less frequently, but to an additional node
 	conf.GossipInterval = 500 * time.Millisecond
 	conf.GossipToTheDeadTime = 60 * time.Second
+	conf.WeightInterval = 5 * time.Second
 	return conf
 }
 

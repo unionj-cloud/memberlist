@@ -161,9 +161,14 @@ type dead struct {
 // weight is broadcast when we send local node weight
 type weight struct {
 	Incarnation uint32
-	Node        string
-	From        string
-	Weight      int
+	// Node whose weight
+	Node string
+	// From message from which node
+	From string
+	// Weight the weight for Node
+	Weight int
+	// WeightAt is UTC timestamp which the weight calculated at, used for ignoring old weight messages in milliseconds
+	WeightAt int64
 }
 
 // pushPullHeader is used to inform the

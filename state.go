@@ -1348,7 +1348,8 @@ func (m *Memberlist) weightNode(s *weight) {
 	old := state.Weight
 	state.Weight = s.Weight
 	state.WeightAt = s.WeightAt
-	m.logger.Printf("[DEBUG] memberlist: updated weight of node %s from %d to %d", state.Name, old, state.Weight)
+	m.logger.Printf("[DEBUG] memberlist: updated weight (calculated at %s) of node %s from %d to %d",
+		time.Unix(s.WeightAt/1000, (s.WeightAt%1000)*1000000).Local().Format("2006-01-02T15:04:05-0700"), state.Name, old, state.Weight)
 }
 
 // mergeState is invoked by the network layer when we get a Push/Pull

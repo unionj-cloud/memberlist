@@ -1347,6 +1347,7 @@ func (m *Memberlist) weightNode(s *weight) {
 	state.Incarnation = s.Incarnation
 	old := state.Weight
 	state.Weight = s.Weight
+	state.WeightAt = s.WeightAt
 	m.logger.Printf("[DEBUG] memberlist: updated weight of node %s from %d to %d", state.Name, old, state.Weight)
 }
 

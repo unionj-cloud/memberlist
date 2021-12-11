@@ -17,6 +17,10 @@ type EventDelegate interface {
 	// updated, usually involving the meta data. The Node argument
 	// must not be modified.
 	NotifyUpdate(*Node)
+
+	// NotifyWeight is invoked when a node's weight is detected to have updated.
+	// The Node argument must not be modified.
+	NotifyWeight(*Node)
 }
 
 // ChannelEventDelegate is used to enable an application to receive
@@ -37,6 +41,7 @@ const (
 	NodeJoin NodeEventType = iota
 	NodeLeave
 	NodeUpdate
+	NodeWeight
 )
 
 // NodeEvent is a single event related to node activity in the memberlist.
@@ -61,4 +66,9 @@ func (c *ChannelEventDelegate) NotifyLeave(n *Node) {
 func (c *ChannelEventDelegate) NotifyUpdate(n *Node) {
 	node := *n
 	c.Ch <- NodeEvent{NodeUpdate, &node}
+}
+
+func (c *ChannelEventDelegate) NotifyWeight(n *Node) {
+	node := *n
+	c.Ch <- NodeEvent{NodeWeight, &node}
 }

@@ -25,17 +25,18 @@ const (
 
 // Node represents a node in the cluster.
 type Node struct {
-	Name  string
-	Addr  string
-	Port  uint16
-	Meta  []byte        // Metadata from the delegate for this node.
-	State NodeStateType // State of the node.
-	PMin  uint8         // Minimum protocol version this understands
-	PMax  uint8         // Maximum protocol version this understands
-	PCur  uint8         // Current version node is speaking
-	DMin  uint8         // Min protocol version for the delegate to understand
-	DMax  uint8         // Max protocol version for the delegate to understand
-	DCur  uint8         // Current version delegate is speaking
+	Name   string
+	Addr   string
+	Port   uint16
+	Meta   []byte        // Metadata from the delegate for this node.
+	State  NodeStateType // State of the node.
+	PMin   uint8         // Minimum protocol version this understands
+	PMax   uint8         // Maximum protocol version this understands
+	PCur   uint8         // Current version node is speaking
+	DMin   uint8         // Min protocol version for the delegate to understand
+	DMax   uint8         // Max protocol version for the delegate to understand
+	DCur   uint8         // Current version delegate is speaking
+	Weight int           // node weight for load balancing
 }
 
 // Address returns the host:port form of a node's address, suitable for use
@@ -64,7 +65,7 @@ type nodeState struct {
 	Incarnation uint32        // Last known incarnation number
 	State       NodeStateType // Current state
 	StateChange time.Time     // Time last state change happened
-	Weight      int           // node weight for load balance
+	Weight      int           // node weight for load balancing
 	WeightAt    int64         // UTC timestamp which node weight calculated at
 }
 
@@ -1348,8 +1349,17 @@ func (m *Memberlist) weightNode(s *weight) {
 	old := state.Weight
 	state.Weight = s.Weight
 	state.WeightAt = s.WeightAt
-	m.logger.Printf("[DEBUG] memberlist: updated weight (calculated at %s) of node %s from %d to %d",
-		time.Unix(s.WeightAt/1000, (s.WeightAt%1000)*1000000).Local().Format("2006-01-02T15:04:05-0700"), state.Name, old, state.Weight)
+	if state.Weight != old {
+		if m.config.Events != nil {
+			node := &Node{
+				Name:   state.Name,
+				Weight: state.Weight,
+			}
+			m.config.Events.NotifyWeight(node)
+		}
+		m.logger.Printf("[DEBUG] memberlist: updated weight (calculated at %s) of node %s from %d to %d",
+			time.Unix(s.WeightAt/1000, (s.WeightAt%1000)*1000000).Local().Format("2006-01-02T15:04:05-0700"), state.Name, old, state.Weight)
+	}
 }
 
 // mergeState is invoked by the network layer when we get a Push/Pull

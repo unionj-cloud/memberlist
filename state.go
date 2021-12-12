@@ -1351,11 +1351,8 @@ func (m *Memberlist) weightNode(s *weight) {
 	state.WeightAt = s.WeightAt
 	if state.Weight != old {
 		if m.config.Events != nil {
-			node := &Node{
-				Name:   state.Name,
-				Weight: state.Weight,
-			}
-			m.config.Events.NotifyWeight(node)
+			state.Node.Weight = state.Weight
+			m.config.Events.NotifyWeight(&state.Node)
 		}
 		m.logger.Printf("[DEBUG] memberlist: updated weight (calculated at %s) of node %s from %d to %d",
 			time.Unix(s.WeightAt/1000, (s.WeightAt%1000)*1000000).Local().Format("2006-01-02T15:04:05-0700"), state.Name, old, state.Weight)

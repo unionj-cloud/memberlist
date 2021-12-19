@@ -1393,6 +1393,14 @@ func (d *toggledEventDelegate) NotifyWeight(n *Node) {
 	}
 }
 
+func (d *toggledEventDelegate) NotifySuspectSateChange(n *Node) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.enabled {
+		d.real.NotifySuspectSateChange(n)
+	}
+}
+
 // Serf Bug: GH-58, Meta data does not update
 func TestMemberList_AliveNode_ChangeMeta(t *testing.T) {
 	ch := make(chan NodeEvent, 1)

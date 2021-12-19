@@ -1152,7 +1152,9 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 		if oldState == StateDead || oldState == StateLeft {
 			// if Dead/Left -> Alive, notify of join
 			m.config.Events.NotifyJoin(&state.Node)
-
+		} else if oldState == StateSuspect {
+			state.Node.State = state.State
+			m.config.Events.NotifySuspectSateChange(&state.Node)
 		} else if !bytes.Equal(oldMeta, state.Meta) {
 			// if Meta changed, trigger an update notification
 			m.config.Events.NotifyUpdate(&state.Node)
@@ -1251,6 +1253,10 @@ func (m *Memberlist) suspectNode(s *suspect) {
 		}
 	}
 	m.nodeTimers[s.Node] = newSuspicion(s.From, k, min, max, fn)
+	if m.config.Events != nil {
+		state.Node.State = state.State
+		m.config.Events.NotifySuspectSateChange(&state.Node)
+	}
 }
 
 // deadNode is invoked by the network layer when we get a message

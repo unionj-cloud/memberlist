@@ -21,6 +21,9 @@ type EventDelegate interface {
 	// NotifyWeight is invoked when a node's weight is detected to have updated.
 	// The Node argument must not be modified.
 	NotifyWeight(*Node)
+
+	// NotifySuspectSateChange is invoked when a node state is changed from StateAlive to StateSuspect or from StateSuspect to StateAlive
+	NotifySuspectSateChange(*Node)
 }
 
 // ChannelEventDelegate is used to enable an application to receive
@@ -42,6 +45,7 @@ const (
 	NodeLeave
 	NodeUpdate
 	NodeWeight
+	NodeSuspect
 )
 
 // NodeEvent is a single event related to node activity in the memberlist.
@@ -71,4 +75,9 @@ func (c *ChannelEventDelegate) NotifyUpdate(n *Node) {
 func (c *ChannelEventDelegate) NotifyWeight(n *Node) {
 	node := *n
 	c.Ch <- NodeEvent{NodeWeight, &node}
+}
+
+func (c *ChannelEventDelegate) NotifySuspectSateChange(n *Node) {
+	node := *n
+	c.Ch <- NodeEvent{NodeSuspect, &node}
 }

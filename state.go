@@ -339,6 +339,18 @@ func (m *Memberlist) probeNode(node *nodeState) {
 			if failedRemote(err) {
 				goto HANDLE_REMOTE_FAILURE
 			} else {
+				if _, ok := err.(*net.DNSError); ok {
+					// Update our self-awareness based on the results of this failed probe.
+					// If we don't have peers who will send nacks then we penalize for any
+					// failed probe as a simple health metric. If we do have peers to nack
+					// verify, then we can use that as a more sophisticated measure of self-
+					// health because we assume them to be working, and they can help us
+					// decide if the probed node was really dead or if it was something wrong
+					// with ourselves.
+					awarenessDelta = 1
+					s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name}
+					m.suspectNode(&s)
+				}
 				return
 			}
 		}
@@ -484,7 +496,6 @@ HANDLE_REMOTE_FAILURE:
 			return
 		}
 	}
-
 	// Update our self-awareness based on the results of this failed probe.
 	// If we don't have peers who will send nacks then we penalize for any
 	// failed probe as a simple health metric. If we do have peers to nack

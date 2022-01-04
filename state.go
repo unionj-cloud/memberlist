@@ -392,8 +392,9 @@ func (m *Memberlist) probeNode(node *nodeState) {
 	select {
 	case v := <-ackCh:
 		if v.Complete == true {
+			rtt := v.Timestamp.Sub(sent)
+			m.logger.Printf("[DEBUG] memberlist: ping remote node %s success in %s", node.Node.Name, rtt.String())
 			if m.config.Ping != nil {
-				rtt := v.Timestamp.Sub(sent)
 				m.config.Ping.NotifyPingComplete(&node.Node, rtt, v.Payload)
 			}
 			return
@@ -513,7 +514,7 @@ HANDLE_REMOTE_FAILURE:
 	}
 
 	// No acks received from target, suspect it as failed.
-	m.logger.Printf("[INFO] memberlist: Suspect %s has failed, no acks received", node.Name)
+	m.logger.Printf("[DEBUG] memberlist: Suspect %s has failed, no acks received", node.Name)
 	s := suspect{Incarnation: node.Incarnation, Node: node.Name, From: m.config.Name}
 	m.suspectNode(&s)
 }

@@ -1163,6 +1163,7 @@ func (m *Memberlist) aliveNode(a *alive, notify chan struct{}, bootstrap bool) {
 	if m.config.Events != nil {
 		if oldState == StateDead || oldState == StateLeft {
 			// if Dead/Left -> Alive, notify of join
+			state.Node.State = state.State
 			m.config.Events.NotifyJoin(&state.Node)
 		} else if oldState == StateSuspect {
 			state.Node.State = state.State
